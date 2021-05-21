@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.daway.service;
 
 import java.io.BufferedReader;
@@ -8,6 +5,9 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +20,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.daway.utils.Utils;
@@ -31,13 +33,81 @@ import net.sf.json.JSONObject;
  * @author Administrator
  *
  */
+@Service
 public class RoadLedPush {
 	private static Utils utils = new Utils();
 	
+	@Async("taskExecutor")
+	public void pushLedColor() {
+		while(true) {
+			try {
+				SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+				Date nowtime = new Date(); 
+				String now = sdf.format(nowtime);
+				nowtime = sdf.parse(now);
+				Date startTime = sdf.parse("06:00:00");
+				Date endTime = sdf.parse("23:00:00");
+				if(isEffectiveDate(nowtime,startTime,endTime)) {
+					getRoadStatus();
+				}
+				Thread.sleep(1000*60);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
 	@Test
 	public void test() {
 		getRoadStatus();
+		
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+			Date nowtime = new Date(); 
+			String now = sdf.format(nowtime);
+			nowtime = sdf.parse(now);
+			Date startTime = sdf.parse("06:00:00");
+			Date endTime = sdf.parse("23:00:00");
+			
+			System.out.println(isEffectiveDate(nowtime,startTime,endTime));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
+	
+	/**
+     * 判断当前时间是否在[startTime, endTime]区间，注意时间格式要一致
+     * 
+     * @param nowTime 当前时间
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return
+     * @author whh
+     */
+    public boolean isEffectiveDate(Date nowTime, Date startTime, Date endTime) {
+        if (nowTime.getTime() == startTime.getTime()
+                || nowTime.getTime() == endTime.getTime()) {
+            return true;
+        }
+
+        Calendar date = Calendar.getInstance();
+        date.setTime(nowTime);
+
+        Calendar begin = Calendar.getInstance();
+        begin.setTime(startTime);
+
+        Calendar end = Calendar.getInstance();
+        end.setTime(endTime);
+
+        if (date.after(begin) && date.before(end)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 	
 	public void getRoadStatus() {
 		Properties serial;
@@ -127,16 +197,16 @@ public class RoadLedPush {
 					"		\"road_name\": \"青莲路\"\r\n" + 
 					"	}]\r\n" + 
 					"}";
-			System.out.println(baidudata);
+//			System.out.println(baidudata);
 			JSONObject json0 = JSONObject.fromObject(baidudata);
 			String status = json0.getString("status");
-			System.out.println(status);
+//			System.out.println(status);
 			JSONArray road_traffic = json0.getJSONArray("road_traffic");
 			Map<String,String> map = new HashMap<String,String>();
 			for(int i=0;i<road_traffic.size();i++) {
 				JSONObject json1 = (JSONObject) road_traffic.get(i);
 				String road_name = json1.getString("road_name");
-				System.out.println(road_name);
+//				System.out.println(road_name);
 				
 				boolean iss = json1.has("congestion_sections");
 				if(iss) {
@@ -148,7 +218,7 @@ public class RoadLedPush {
 						String status2 = json2.getString("status");
 						String congestion_trend = json2.getString("congestion_trend");
 						String section_desc = json2.getString("section_desc");
-						System.out.println(congestion_distance+"-"+speed+"-"+status2+"-"+congestion_trend+"-"+section_desc);
+//						System.out.println(congestion_distance+"-"+speed+"-"+status2+"-"+congestion_trend+"-"+section_desc);
 						String direction = section_desc.substring(0, section_desc.indexOf(","));
 						map.put(direction, status2);
 					}
@@ -158,34 +228,55 @@ public class RoadLedPush {
 			String situation1 = map.get("南向北");
 			String situation2 = map.get("东向西");
 			String situation3 = map.get("西向东");
+			String situation4 = map.get("北向南");
 			
-			System.out.println(situation1);
-			System.out.println(situation2);
-			System.out.println(situation3);
+			String leftcolor = "green";
+			String rightcolor = "green";
+			String centernorthcolor = "green";
+			String centersouthcolor = "green";
 			
 			if(situation1!=null && Integer.parseInt(situation1)>2) {
-				
+				centernorthcolor = "red";
 			}else if(situation1!=null && Integer.parseInt(situation1)==2) {
-				
+				centernorthcolor = "yellow";
 			}
 			
 			if(situation2!=null && Integer.parseInt(situation2)>2) {
-				
+				leftcolor = "red";
 			}else if(situation2!=null && Integer.parseInt(situation2)==2) {
-				
+				leftcolor = "yellow";
 			}
 			
 			if(situation3!=null && Integer.parseInt(situation3)>2) {
-				
+				rightcolor = "red";
 			}else if(situation3!=null && Integer.parseInt(situation3)==2) {
-				
+				rightcolor = "yellow";
 			}
 			
+			if(situation4!=null && Integer.parseInt(situation4)>2) {
+				centersouthcolor = "red";
+			}else if(situation4!=null && Integer.parseInt(situation4)==2) {
+				centersouthcolor = "yellow";
+			}
 			
-//			String ledjson = sendLedJson("ssss");
-//			String ledip = serial.getProperty("ledip");
-//			String url = "http://" + ledip + "/api/program/Multi-Line.vsn";
-//			ledPush(ledjson,url);
+			//北方向诱导屏
+			String data = getJsonData(leftcolor,rightcolor,centernorthcolor);
+			if(!data.equals(Utils.northdata)) {
+				Utils.northdata = data;
+				String northledip = serial.getProperty("northledip");
+				String url = "http://" + northledip + "/api/program/Multi-Line.vsn";
+				ledPush(data,url);
+			}
+			
+			//南方向诱导屏
+			String southdata = getJsonData(leftcolor,rightcolor,centersouthcolor);
+			if(!southdata.equals(Utils.southdata)) {
+				Utils.southdata = southdata;
+				String southledip = serial.getProperty("southledip");
+				String url = "http://" + southledip + "/api/program/Multi-Line.vsn";
+				ledPush(data,url);
+			}
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -346,5 +437,81 @@ public class RoadLedPush {
 	        return result;
 	    }
 	 
+	 public String getJsonData(String leftcolor,String rightcolor,String centercolor) {
+		 String data = "{\r\n" + 
+		 		"  \"Programs\": {\r\n" + 
+		 		"    \"Program\": {\r\n" + 
+		 		"		\"Information\":{  \r\n" + 
+		 		"			\"Width\":\"256\",\r\n" + 
+		 		"			\"Height\":\"256\"\r\n" + 
+		 		"			},\r\n" + 
+		 		"      \"Pages\": [{\r\n" + 
+		 		"          \"Name\":\"Page 1\",\r\n" + 
+		 		"          \"Regions\": [\r\n" + 
+		 		"              {\r\n" + 
+		 		"			    \"Layer\":1,\r\n" + 
+		 		"                \"Rect\": {\r\n" + 
+		 		"                  \"X\": \"0\",\r\n" + 
+		 		"                  \"Y\": \"0\",\r\n" + 
+		 		"                  \"Width\": \"232\",\r\n" + 
+		 		"                  \"Height\": \"32\"\r\n" + 
+		 		"                },\r\n" + 
+		 		"                \"Items\": [{\r\n" + 
+		 		"                    \"Type\": \"4\",\r\n" + 
+		 		"                    \"BackColor\": "+leftcolor+",\r\n" + 
+		 		"                    \"TextColor\":"+leftcolor+",\r\n" + 
+		 		"                    \"Text\" : \"\",\r\n" + 
+		 		"                    \"LogFont\":{\r\n" + 
+		 		"						\"lfHeight\":\"32\",\r\n" + 
+		 		"						\"lfWeight\":\"0\",\r\n" + 
+		 		"					    \"lfFaceName\":\"黑体\"\r\n" + 
+		 		"					}\r\n" + 
+		 		"				}]\r\n" + 
+		 		"              },{\r\n" + 
+		 		"			    \"Layer\":2,\r\n" + 
+		 		"                \"Rect\": {\r\n" + 
+		 		"                  \"X\": \"0\",\r\n" + 
+		 		"                  \"Y\": \"32\",\r\n" + 
+		 		"                  \"Width\": \"232\",\r\n" + 
+		 		"                  \"Height\": \"32\"\r\n" + 
+		 		"                },\r\n" + 
+		 		"                \"Items\": [{\r\n" + 
+		 		"                    \"Type\": \"4\",\r\n" + 
+		 		"                    \"BackColor\": "+rightcolor+",\r\n" + 
+		 		"                    \"TextColor\":"+rightcolor+",\r\n" + 
+		 		"                    \"Text\" : \"\",\r\n" + 
+		 		"                    \"LogFont\":{\r\n" + 
+		 		"						\"lfHeight\":\"32\",\r\n" + 
+		 		"						\"lfWeight\":\"0\",\r\n" + 
+		 		"					    \"lfFaceName\":\"黑体\"\r\n" + 
+		 		"					}\r\n" + 
+		 		"				}]\r\n" + 
+		 		"              },{\r\n" + 
+		 		"			    \"Layer\":3,\r\n" + 
+		 		"                \"Rect\": {\r\n" + 
+		 		"                  \"X\": \"0\",\r\n" + 
+		 		"                  \"Y\": \"76\",\r\n" + 
+		 		"                  \"Width\": \"232\",\r\n" + 
+		 		"                  \"Height\": \"32\"\r\n" + 
+		 		"                },\r\n" + 
+		 		"                \"Items\": [{\r\n" + 
+		 		"                    \"Type\": \"4\",\r\n" + 
+		 		"                    \"BackColor\": "+centercolor+",\r\n" + 
+		 		"                    \"TextColor\":"+centercolor+",\r\n" + 
+		 		"                    \"Text\" : \"\",\r\n" + 
+		 		"                    \"LogFont\":{\r\n" + 
+		 		"						\"lfHeight\":\"32\",\r\n" + 
+		 		"						\"lfWeight\":\"0\",\r\n" + 
+		 		"					    \"lfFaceName\":\"黑体\"\r\n" + 
+		 		"					}\r\n" + 
+		 		"				}]\r\n" + 
+		 		"              }\r\n" + 
+		 		"            ]\r\n" + 
+		 		"        }]\r\n" + 
+		 		"    }\r\n" + 
+		 		"  }\r\n" + 
+		 		"}";
+		 return data;
+	 }
 	 
 }
