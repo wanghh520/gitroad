@@ -36,21 +36,26 @@ import net.sf.json.JSONObject;
 @Service
 public class RoadLedPush {
 	private static Utils utils = new Utils();
+	int ledfalse = 0;
 	
 	@Async("taskExecutor")
 	public void pushLedColor() {
+		Properties serial;
 		while(true) {
 			try {
 				SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 				Date nowtime = new Date(); 
 				String now = sdf.format(nowtime);
 				nowtime = sdf.parse(now);
-				Date startTime = sdf.parse("06:00:00");
-				Date endTime = sdf.parse("23:00:00");
-				if(isEffectiveDate(nowtime,startTime,endTime)) {
-					getRoadStatus();
+				Date startTime1 = sdf.parse("06:00:00");
+				Date endTime1 = sdf.parse("23:00:00");
+				if(isEffectiveDate(nowtime,startTime1,endTime1)) {
+					serial = utils.readProperties("application.properties");
+					String centercoordinate = serial.getProperty("centercoordinate");
+					String baiduurl = "http://api.map.baidu.com/traffic/v1/around?ak=7T5CaExBDqUj0lYZd0BT9oG2Z5MYiTp9&center="+centercoordinate+"&radius=300&coord_type_input=gcj02&coord_type_output=gcj02";
+					getRoadStatus(baiduurl);
 				}
-				Thread.sleep(1000*60);
+				Thread.sleep(1000*60*2);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -58,25 +63,6 @@ public class RoadLedPush {
 		}
 	}
 
-	@Test
-	public void test() {
-		getRoadStatus();
-		
-		try {
-			SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-			Date nowtime = new Date(); 
-			String now = sdf.format(nowtime);
-			nowtime = sdf.parse(now);
-			Date startTime = sdf.parse("06:00:00");
-			Date endTime = sdf.parse("23:00:00");
-			
-			System.out.println(isEffectiveDate(nowtime,startTime,endTime));
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
 	
 	/**
      * 判断当前时间是否在[startTime, endTime]区间，注意时间格式要一致
@@ -109,94 +95,11 @@ public class RoadLedPush {
         }
     }
 	
-	public void getRoadStatus() {
+	public void getRoadStatus(String baiduurl) {
 		Properties serial;
 		try { 
 			serial = utils.readProperties("application.properties");
-			String centercoordinate = serial.getProperty("centercoordinate");
-			String baiduurl = "http://api.map.baidu.com/traffic/v1/around?ak=7T5CaExBDqUj0lYZd0BT9oG2Z5MYiTp9&center="+centercoordinate+"&radius=500&coord_type_input=gcj02&coord_type_output=gcj02";
 			String baidudata = sendGet(baiduurl);
-			
-			baidudata = "{\r\n" + 
-					"	\"status\": 0,\r\n" + 
-					"	\"message\": \"成功\",\r\n" + 
-					"	\"description\": \"该区域整体轻微拥堵。快速内环西线：南向北,从五家浜桥到五家桥拥堵；北向南,从五家桥到明秀桥行驶缓慢。青祁路：南向北,从五家浜桥到五家桥拥堵。青祁隧道：南向北,从青祁路到五家桥拥堵。\",\r\n" + 
-					"	\"evaluation\": {\r\n" + 
-					"		\"status\": 2,\r\n" + 
-					"		\"status_desc\": \"轻微拥堵\"\r\n" + 
-					"	},\r\n" + 
-					"	\"road_traffic\": [{\r\n" + 
-					"		\"road_name\": \"UNKNOW\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"北华巷路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"北华路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"唐巷路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"建筑路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"congestion_sections\": [{\r\n" + 
-					"			\"congestion_distance\": 760,\r\n" + 
-					"			\"speed\": 21.58,\r\n" + 
-					"			\"status\": 3,\r\n" + 
-					"			\"congestion_trend\": \"WORSE\",\r\n" + 
-					"			\"section_desc\": \"南向北,从五家浜桥到五家桥\",\r\n" + 
-					"			\"congection_trend\": null\r\n" + 
-					"		},\r\n" + 
-					"		{\r\n" + 
-					"			\"congestion_distance\": 2990,\r\n" + 
-					"			\"speed\": 33.04,\r\n" + 
-					"			\"status\": 2,\r\n" + 
-					"			\"congestion_trend\": \"BETTER\",\r\n" + 
-					"			\"section_desc\": \"北向南,从五家桥到明秀桥\",\r\n" + 
-					"			\"congection_trend\": null\r\n" + 
-					"		}],\r\n" + 
-					"		\"road_name\": \"快速内环西线\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"溪南路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"稻香路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"蓝庭路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"邱巷路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"congestion_sections\": [{\r\n" + 
-					"			\"congestion_distance\": 760,\r\n" + 
-					"			\"speed\": 21.58,\r\n" + 
-					"			\"status\": 3,\r\n" + 
-					"			\"congestion_trend\": \"WORSE\",\r\n" + 
-					"			\"section_desc\": \"南向北,从五家浜桥到五家桥\",\r\n" + 
-					"			\"congection_trend\": null\r\n" + 
-					"		}],\r\n" + 
-					"		\"road_name\": \"青祁路\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"congestion_sections\": [{\r\n" + 
-					"			\"congestion_distance\": 510,\r\n" + 
-					"			\"speed\": 24.14,\r\n" + 
-					"			\"status\": 3,\r\n" + 
-					"			\"congestion_trend\": \"WORSE\",\r\n" + 
-					"			\"section_desc\": \"南向北,从青祁路到五家桥\",\r\n" + 
-					"			\"congection_trend\": null\r\n" + 
-					"		}],\r\n" + 
-					"		\"road_name\": \"青祁隧道\"\r\n" + 
-					"	},\r\n" + 
-					"	{\r\n" + 
-					"		\"road_name\": \"青莲路\"\r\n" + 
-					"	}]\r\n" + 
-					"}";
 //			System.out.println(baidudata);
 			JSONObject json0 = JSONObject.fromObject(baidudata);
 			String status = json0.getString("status");
@@ -262,19 +165,26 @@ public class RoadLedPush {
 			//北方向诱导屏
 			String data = getJsonData(leftcolor,rightcolor,centernorthcolor);
 			if(!data.equals(Utils.northdata)) {
-				Utils.northdata = data;
 				String northledip = serial.getProperty("northledip");
 				String url = "http://" + northledip + "/api/program/Multi-Line.vsn";
 				ledPush(data,url);
+				
+				if(ledfalse==0) {
+					Utils.northdata = data;
+				}
 			}
 			
 			//南方向诱导屏
 			String southdata = getJsonData(leftcolor,rightcolor,centersouthcolor);
 			if(!southdata.equals(Utils.southdata)) {
-				Utils.southdata = southdata;
+				
 				String southledip = serial.getProperty("southledip");
 				String url = "http://" + southledip + "/api/program/Multi-Line.vsn";
 				ledPush(data,url);
+				
+				if(ledfalse==0) {
+					Utils.southdata = southdata;
+				}
 			}
 			
 		} catch (Exception e) {
@@ -308,10 +218,11 @@ public class RoadLedPush {
 			// String result = restTemplate.getForObject(url, String.class);
 			String result = restTemplate.postForObject(url, formEntity, String.class);
 			System.out.println(url + "LED屏推送=============" + url);
-			System.out.println("result:" + result);
+//			System.out.println("result:" + result);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.out.println(url + "推送LED屏推送报错=============");
+			ledfalse = 1;
 		}
 	}
 	
