@@ -52,7 +52,8 @@ public class RoadLedPush {
 				if(isEffectiveDate(nowtime,startTime1,endTime1)) {
 					serial = utils.readProperties("application.properties");
 					String centercoordinate = serial.getProperty("centercoordinate");
-					String baiduurl = "http://api.map.baidu.com/traffic/v1/around?ak=7T5CaExBDqUj0lYZd0BT9oG2Z5MYiTp9&center="+centercoordinate+"&radius=300&coord_type_input=gcj02&coord_type_output=gcj02";
+					String baiduak = serial.getProperty("baiduak");
+					String baiduurl = "http://api.map.baidu.com/traffic/v1/around?ak="+baiduak+"&center="+centercoordinate+"&radius=300&coord_type_input=gcj02&coord_type_output=gcj02";
 					getRoadStatus(baiduurl);
 				}
 				Thread.sleep(1000*60*2);
@@ -175,7 +176,7 @@ public class RoadLedPush {
 			}
 			
 			//南方向诱导屏
-			String southdata = getJsonData(leftcolor,rightcolor,centersouthcolor);
+			String southdata = getJsonData(rightcolor,leftcolor,centersouthcolor);
 			if(!southdata.equals(Utils.southdata)) {
 				
 				String southledip = serial.getProperty("southledip");
