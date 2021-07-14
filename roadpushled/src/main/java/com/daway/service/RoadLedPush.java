@@ -47,16 +47,25 @@ public class RoadLedPush {
 				Date nowtime = new Date(); 
 				String now = sdf.format(nowtime);
 				nowtime = sdf.parse(now);
-				Date startTime1 = sdf.parse("06:00:00");
-				Date endTime1 = sdf.parse("23:00:00");
+				Date startTime1 = sdf.parse("00:00:00");
+				Date endTime1 = sdf.parse("15:00:00");
 				if(isEffectiveDate(nowtime,startTime1,endTime1)) {
 					serial = utils.readProperties("application.properties");
 					String centercoordinate = serial.getProperty("centercoordinate");
-					String baiduak = serial.getProperty("baiduak");
+					String baiduak = serial.getProperty("baiduak1");
 					String baiduurl = "http://api.map.baidu.com/traffic/v1/around?ak="+baiduak+"&center="+centercoordinate+"&radius=300&coord_type_input=gcj02&coord_type_output=gcj02";
 					getRoadStatus(baiduurl);
 				}
-				Thread.sleep(1000*60*2);
+				Date startTime2 = sdf.parse("15:00:00");
+				Date endTime2 = sdf.parse("24:00:00");
+				if(isEffectiveDate(nowtime,startTime2,endTime2)) {
+					serial = utils.readProperties("application.properties");
+					String centercoordinate = serial.getProperty("centercoordinate");
+					String baiduak = serial.getProperty("baiduak2");
+					String baiduurl = "http://api.map.baidu.com/traffic/v1/around?ak="+baiduak+"&center="+centercoordinate+"&radius=300&coord_type_input=gcj02&coord_type_output=gcj02";
+					getRoadStatus(baiduurl);
+				}
+				Thread.sleep(1000*60);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
